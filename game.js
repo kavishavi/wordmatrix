@@ -3,6 +3,8 @@ const SITE_URL = 'https://kavishavi.github.io/wordmatrix/';
 const K = (k) => 'wm3_' + k; // localStorage key prefix
 
 let practice = false;
+let tryMode = false;
+let tryMarks = new Set(); // temporary highlights only, never saved
 let dayNumber = 1;
 let puzzle = null;          // {words:[w1,w2,w3], scramble:[...]}
 let solvedLetters = [];     // 9 letters, solved order
@@ -99,12 +101,17 @@ function render() {
       cell.dataset.idx = i;
       if (locked[r]) cell.classList.add('correct','disabled');
       if (selected === i) cell.classList.add('selected');
+      if (tryMarks.has(i)) cell.classList.add('try-mark');
       cell.addEventListener('click', onCellClick);
       row.appendChild(cell);
     }
     g.appendChild(row);
   }
   document.getElementById('movesCounter').textContent = moves;
+  const tryControl = document.getElementById('tryControl');
+  const tryHint = document.getElementById('tryHint');
+  if (tryControl) tryControl.hidden = won;
+  if (tryHint) tryHint.hidden = !tryMode || won;
   document.getElementById('dayLabel').textContent = practice ? 'Practice' : '#' + dayNumber;
   document.getElementById('practiceBanner').style.display = practice ? 'block' : 'none';
 }
@@ -113,6 +120,12 @@ function onCellClick(e) {
   const i = parseInt(e.currentTarget.dataset.idx, 10);
   const r = Math.floor(i/3);
   if (locked[r] || won) return;
+  if (tryMode) {
+    if (tryMarks.has(i)) tryMarks.delete(i);
+    else tryMarks.add(i);
+    render();
+    return;
+  }
   if (selected === -1) { selected = i; }
   else if (selected === i) { selected = -1; }
   else {
@@ -124,6 +137,14 @@ function onCellClick(e) {
     save();
     if (locked.every(x=>x)) onWin();
   }
+  render();
+}
+
+// Like the original's विकल्प जाँच: mark letters, do not swap or score.
+function toggleTryMode() {
+  tryMode = document.getElementById('tryModeToggle').checked;
+  selected = -1;
+  tryMarks.clear();
   render();
 }
 
