@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3x3 Word Matrix - Three Letter Words</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=try1">
 </head>
 <body>
     <div class="navbar">
@@ -39,6 +39,7 @@
             <p>Find the <b>three</b> English words hidden in this puzzle. Touch the first letter box,
                then touch another box to swap the two letters. When a correct word is made in any row,
                that row turns green and locks. Keep going to find the rest. Only the three hidden words turn green - other real words you make are decoys and stay white.</p>
+            <p><b>Try mode:</b> tap letters to mark possible words in yellow without swapping or adding moves. Tap again to unmark. Turn Try mode off to clear the marks and resume swapping.</p>
             <p>एक नई पहेली रोज़ रात 12 बजे आपके स्थानीय समय पर मिलेगी।</p>
             <p>A new puzzle arrives every day at midnight, your local time.</p>
             <p><a href="index.html?practice=1">Practice mode</a> - play a random puzzle any time (does not affect your score or streak).</p>
@@ -63,8 +64,16 @@
         <div id="practiceBanner" style="display:none;">Practice puzzle - score and streak are not affected</div>
         <div class="grid-container" id="grid"></div>
         <div class="text-center mt-3 button-container">
-            <span style="margin: auto;">Moves:&nbsp;<span id="movesCounter">0</span></span>
+            <span>Moves:&nbsp;<span id="movesCounter">0</span></span>
+            <label id="tryControl" class="try-control">
+                <span>Try mode</span>
+                <span class="switch">
+                    <input type="checkbox" id="tryModeToggle" aria-describedby="tryHint" onchange="toggleTryMode()">
+                    <span class="slider"></span>
+                </span>
+            </label>
         </div>
+        <p id="tryHint" class="try-hint" hidden>Tap letters to mark or unmark them. No swaps or moves.<br>Turn Try mode off to resume swapping.</p>
     </div>
 
     <div id="winModal" class="modal-overlay">
@@ -104,6 +113,6 @@
         <p>More games: <a href="https://kavishavi.github.io/quizzes/">All quizzes</a></p>
     </footer>
     <script src="wordbank.js"></script>
-    <script src="game.js"></script>
+    <script src="game.js?v=try1"></script>
 </body>
 </html>
