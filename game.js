@@ -49,7 +49,9 @@ function initGame() {
   const savedDay = getV('day','');
   const today = localToday();
 
-  if (!practice && savedDay === today && getV('grid','').length === 9) {
+  const sig = puzzle.words.join(',');
+  const sigOk = getV('puzzleSig','') === sig;
+  if (!practice && savedDay === today && sigOk && getV('grid','').length === 9) {
     grid = getV('grid','').split('');
     moves = parseInt(getV('moves','0'),10) || 0;
     solveMoves = getV('solveMoves','') ? getV('solveMoves','').split(',').map(Number) : [];
@@ -59,6 +61,7 @@ function initGame() {
     moves = 0; solveMoves = []; won = false;
     if (!practice) {
       setV('day', today);
+      setV('puzzleSig', sig);
       // count a "play" once per day
       if (getV('lastPlayed','') !== today) {
         setV('lastPlayed', today);
