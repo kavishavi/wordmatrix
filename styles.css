@@ -291,3 +291,11 @@ input:checked + .slider:before { transform: translateX(26px); }
     box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
 }
 .footer a { color: var(--text-color); }
+
+/* Temporary yellow marks, separate from a selected swap or a green solved row. */
+.grid-item.try-mark { background-color: #f8b705; color: #0f0f0f; }
+.button-container { justify-content: space-between; gap: 20px; }
+.try-control { display: inline-flex; gap: 10px; align-items: center; cursor: pointer; }
+.try-control[hidden], .try-hint[hidden] { display: none; }
+.try-hint { text-align: center; font-size: 14px; line-height: 1.5; margin: 8px 0 0; }
+input:focus-visible + .slider { outline: 2px solid var(--text-color); outline-offset: 3px; }
