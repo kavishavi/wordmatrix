@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3x3 Word Matrix - Three Letter Words</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="navbar">
+        <div class="left-section">
+            <a class="all-quizzes" href="https://kavishavi.github.io/quizzes/">All quizzes</a>
+            <div class="help-menu" onclick="toggleMenu('help')">
+                <i class="fas fa-question-circle"></i>
+            </div>
+        </div>
+        <div class="title-container"><a class="title" href="index.html">3x3 Word Matrix <span id="dayLabel"></span></a></div>
+        <div class="right-section">
+            <div id="divStats" onclick="showWinModal()">
+                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24">
+                    <path fill="var(--text-color)" d="M16,11V3H8v6H2v12h20V11H16z M10,5h4v14h-4V5z M4,11h4v8H4V11z M20,19h-4v-6h4V19z"></path>
+                </svg>
+            </div>
+            <div class="settings-menu" onclick="toggleMenu('right')">
+                <i class="fas fa-cog"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" onclick="closeAllMenus()"></div>
+
+    <div class="sidebar help-sidebar">
+        <div class="sidebar-header">
+            <h3>How to play</h3>
+            <button class="close-button" onclick="toggleMenu('help')">&times;</button>
+        </div>
+        <div class="help-content">
+            <p>Find the <b>three</b> English words hidden in this puzzle. Touch the first letter box,
+               then touch another box to swap the two letters. When a correct word is made in any row,
+               that row turns green and locks. Keep going to find the rest.</p>
+            <p>एक नई पहेली रोज़ रात 12 बजे आपके स्थानीय समय पर मिलेगी।</p>
+            <p>A new puzzle arrives every day at midnight, your local time.</p>
+            <p><a href="index.html?practice=1">Practice mode</a> - play a random puzzle any time (does not affect your score or streak).</p>
+        </div>
+    </div>
+
+    <div class="sidebar right-sidebar">
+        <div class="sidebar-header">
+            <h3>Settings</h3>
+            <button class="close-button" onclick="toggleMenu('right')">&times;</button>
+        </div>
+        <div class="toggle-container">
+            <span>Dark mode</span>
+            <label class="switch">
+                <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <div class="content">
+        <div id="practiceBanner" style="display:none;">Practice puzzle - score and streak are not affected</div>
+        <div class="grid-container" id="grid"></div>
+        <div class="text-center mt-3 button-container">
+            <span style="margin: auto;">Moves:&nbsp;<span id="movesCounter">0</span></span>
+        </div>
+    </div>
+
+    <div id="winModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeWinModal()">×</span>
+            <div class="modal-header">Statistics</div>
+            <div class="model-row" style="display: block;">
+                <div id="statistics">
+                    <div class="statistic-container"><div class="statistic" id="playCount">0</div><div class="label">Played</div></div>
+                    <div class="statistic-container"><div class="statistic" id="winCount">0%</div><div class="label">Win %</div></div>
+                    <div class="statistic-container"><div class="statistic" id="playStreak">0</div><div class="label">Current Streak</div></div>
+                    <div class="statistic-container"><div class="statistic" id="maxStreak">0</div><div class="label">Max Streak</div></div>
+                </div>
+                <hr size="1" />
+            </div>
+            <div class="modal-row">
+                <div id="pWin" style="display: none;"><p>Solved in <span id="moveCount1">0</span> moves!</p></div>
+                <p id="pPlay"><span id="moveCount2">0</span> moves so far.</p>
+                <pre id="winSteps"></pre>
+            </div>
+            <hr size="1" />
+            <div class="model-row">
+                <div class="countdown">Next puzzle: <span id="countdownTimer">00:00:00</span></div>
+                <div style="min-width: 50%; padding-left: 10px; margin: auto;" id="rowShare">
+                    <button class="share-button" style="width: 80%;" id="btnShare" onclick="shareResult()">
+                        Share
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24">
+                            <path fill="" d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92zM18 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM6 13c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm12 7.02c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>More games: <a href="https://kavishavi.github.io/quizzes/">All quizzes</a></p>
+    </footer>
+    <script src="wordbank.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
