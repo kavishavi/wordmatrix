@@ -150,10 +150,21 @@ function toggleTryMode() {
 
 // ---------- solving ----------
 function recomputeLocks(countNew) {
+  // Each target word can lock at most one row; a word already locked
+  // elsewhere must not satisfy a second row.
+  const used = [false,false,false];
+  for (let r=0; r<3; r++) {
+    if (!locked[r]) continue;
+    const row = grid.slice(r*3, r*3+3).join('');
+    const i = puzzle.words.findIndex((w,k) => !used[k] && w === row);
+    if (i >= 0) used[i] = true;
+  }
   for (let r=0; r<3; r++) {
     if (locked[r]) continue;
     const row = grid.slice(r*3, r*3+3).join('');
-    if (puzzle.words.includes(row)) {
+    const i = puzzle.words.findIndex((w,k) => !used[k] && w === row);
+    if (i >= 0) {
+      used[i] = true;
       locked[r] = true;
       if (countNew) solveMoves.push(moves);
     }
