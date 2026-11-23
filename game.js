@@ -32,6 +32,27 @@ function dayIndex() {
 function setV(k,v){ try { localStorage.setItem(K(k), String(v)); } catch(e){} }
 function getV(k,d){ try { const v = localStorage.getItem(K(k)); return v===null ? d : v; } catch(e){ return d; } }
 
+// ---------- analytics (GoatCounter; same quiz-started/quiz-completed events as the quizzes) ----------
+function trackEvent(name) {
+  if (practice) return;
+  const today = localToday();
+  const path = name + '/' + today;
+  const key = K('analytics_' + path);
+  try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch (e) {}
+  let tries = 0;
+  const attempt = function() {
+    try {
+      const gc = window.goatcounter;
+      if (gc && typeof gc.count === 'function') {
+        gc.count({ path: path, title: name + ' (' + today + ')', event: true });
+      } else if (++tries < 40) {
+        setTimeout(attempt, 250);
+      }
+    } catch (e) {}
+  };
+  attempt();
+}
+
 // ---------- setup ----------
 function pickPuzzle() {
   const params = new URLSearchParams(location.search);
@@ -68,6 +89,7 @@ function initGame() {
       if (getV('lastPlayed','') !== today) {
         setV('lastPlayed', today);
         setV('playCount', (parseInt(getV('playCount','0'),10)||0) + 1);
+        trackEvent('quiz-started');
       }
       save();
     }
@@ -190,6 +212,7 @@ function onWin() {
       const mx = parseInt(getV('maxStreak','0'),10) || 0;
       if (streak > mx) setV('maxStreak', streak);
     }
+    trackEvent('quiz-completed');
   }
   setTimeout(showWinModal, 600);
 }
