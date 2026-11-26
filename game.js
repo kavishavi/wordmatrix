@@ -268,20 +268,11 @@ let seenDay = localToday();
 setInterval(() => { if (localToday() !== seenDay) location.reload(); }, 60000);
 
 // ---------- share ----------
-async function shareResult() {
-  let text = '🧩 3x3 Word Matrix ' + (practice ? '(practice)' : '#' + dayNumber) + '\n' +
-             'Solved in ' + moves + ' moves!\n\n' + barChart() + '\n' + SITE_URL;
-  if (navigator.share) {
-    try { await navigator.share({title: '3x3 Word Matrix', text: text}); }
-    catch(e) { if (e && e.name !== 'AbortError') fallbackShare(text); }
-  } else fallbackShare(text);
-}
-function fallbackShare(text) {
-  const ta = document.createElement('textarea');
-  ta.value = text; document.body.appendChild(ta); ta.select();
-  try { document.execCommand('copy'); alert('Result copied to clipboard!'); } catch(e){}
-  document.body.removeChild(ta);
-}
+function shareToast(msg){var t=document.getElementById('shareToast');if(!t){t=document.createElement('div');t.id='shareToast';t.style.cssText='position:fixed;left:50%;bottom:70px;transform:translateX(-50%);background:#222;color:#fff;padding:12px 18px;border-radius:8px;font-size:16px;z-index:100000;max-width:85%;text-align:center;';document.body.appendChild(t);}t.textContent=msg;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(function(){t.style.display='none';},2500);}
+function legacyCopy(text){try{var ta=document.createElement('textarea');ta.value=text;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,text.length);var ok=document.execCommand('copy');document.body.removeChild(ta);return ok;}catch(e){return false;}}
+function showShareBox(text){var old=document.getElementById('shareBox');if(old)old.remove();var box=document.createElement('div');box.id='shareBox';box.style.cssText='position:fixed;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,.6);z-index:100001;display:flex;align-items:center;justify-content:center;';var card=document.createElement('div');card.style.cssText='background:#fff;color:#000;padding:16px;border-radius:10px;width:88%;max-width:420px;font-size:16px;';var p=document.createElement('p');p.textContent='Copy your result and paste it anywhere:';p.style.margin='0 0 8px';var ta=document.createElement('textarea');ta.value=text;ta.readOnly=true;ta.style.cssText='width:100%;height:150px;box-sizing:border-box;font-size:16px;';ta.onfocus=function(){ta.select();};var wa=document.createElement('a');wa.textContent='Send via WhatsApp';wa.href='https://wa.me/?text='+encodeURIComponent(text);wa.target='_blank';wa.rel='noopener';wa.style.cssText='display:inline-block;margin:10px 12px 0 0;color:#2e7d32;font-weight:bold;';var cl=document.createElement('button');cl.textContent='Close';cl.style.cssText='margin-top:10px;padding:6px 14px;font-size:16px;';cl.onclick=function(){box.remove();};card.appendChild(p);card.appendChild(ta);card.appendChild(wa);card.appendChild(cl);box.appendChild(card);document.body.appendChild(box);ta.focus();ta.select();}
+async function fallbackShare(text){if(navigator.clipboard&&navigator.clipboard.writeText){try{await navigator.clipboard.writeText(text);shareToast('Result copied to clipboard!');return;}catch(e){}}if(legacyCopy(text)){shareToast('Result copied to clipboard!');return;}showShareBox(text);}
+async function shareResult(){var text='🧩 3x3 Word Matrix '+(practice?'(practice)':'#'+dayNumber)+'\n'+'Solved in '+moves+' moves!\n\n'+barChart()+'\n'+SITE_URL;if(navigator.share){try{await navigator.share({title:'3x3 Word Matrix',text:text});return;}catch(e){if(e&&e.name==='AbortError')return;}}fallbackShare(text);}
 
 // ---------- menus / theme ----------
 function toggleMenu(which) {
