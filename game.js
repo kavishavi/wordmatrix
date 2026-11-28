@@ -3,6 +3,8 @@ const SITE_URL = 'https://kavishavi.github.io/wordmatrix/';
 const K = (k) => 'wm3_' + k; // localStorage key prefix
 
 let practice = false;
+let review = false;        // replaying a past day: saved per day, no score/streak effect
+let viewDate = '';
 let tryMode = false;
 let tryMarks = new Set(); // temporary highlights only, never saved
 let dayNumber = 1;
@@ -20,12 +22,17 @@ function localToday() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
-function dayIndex() {
+function dayIndexOf(ds) {
   const [y,m,d] = FIRST_DATE.split('-').map(Number);
   const first = new Date(y, m-1, d);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return Math.max(0, Math.floor((today - first) / 86400000));
+  const [y2,m2,d2] = ds.split('-').map(Number);
+  const dt = new Date(y2, m2-1, d2);
+  return Math.max(0, Math.round((dt - first) / 86400000));
+}
+function dayIndex() { return dayIndexOf(localToday()); }
+function fmtDate(ds) {
+  const [y,m,d] = ds.split('-').map(Number);
+  return new Date(y, m-1, d).toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'});
 }
 
 // ---------- storage ----------
@@ -34,7 +41,7 @@ function getV(k,d){ try { const v = localStorage.getItem(K(k)); return v===null 
 
 // ---------- analytics (GoatCounter; same quiz-started/quiz-completed events as the quizzes) ----------
 function trackEvent(name) {
-  if (practice) return;
+  if (practice || review) return;
   const today = localToday();
   const path = name + '/' + today;
   const key = K('analytics_' + path);
@@ -62,8 +69,12 @@ function pickPuzzle() {
     dayNumber = 0;
     return;
   }
-  dayNumber = dayIndex() + 1;
-  puzzle = PUZZLES[dayIndex() % PUZZLES.length];
+  const qd = params.get('date') || '';
+  const today = localToday();
+  review = /^\d{4}-\d{2}-\d{2}$/.test(qd) && qd >= FIRST_DATE && qd < today;
+  viewDate = review ? qd : today;
+  dayNumber = dayIndexOf(viewDate) + 1;
+  puzzle = PUZZLES[dayIndexOf(viewDate) % PUZZLES.length];
 }
 
 function initGame() {
@@ -74,7 +85,17 @@ function initGame() {
 
   const sig = puzzle.words.join(',');
   const sigOk = getV('puzzleSig','') === sig;
-  if (!practice && savedDay === today && sigOk && getV('grid','').length === 9) {
+  if (review) {
+    let st = null;
+    try { st = JSON.parse(getV('rev_' + viewDate, 'null')); } catch (e) {}
+    if (st && st.sig === sig && st.grid && st.grid.length === 9) {
+      grid = st.grid.split(''); moves = st.moves || 0; solveMoves = st.solveMoves || []; won = !!st.won;
+    } else {
+      grid = puzzle.scramble.map(i => solvedLetters[i]);
+      moves = 0; solveMoves = []; won = false;
+      save();
+    }
+  } else if (!practice && savedDay === today && sigOk && getV('grid','').length === 9) {
     grid = getV('grid','').split('');
     moves = parseInt(getV('moves','0'),10) || 0;
     solveMoves = getV('solveMoves','') ? getV('solveMoves','').split(',').map(Number) : [];
@@ -102,6 +123,10 @@ function initGame() {
 
 function save() {
   if (practice) return;
+  if (review) {
+    setV('rev_' + viewDate, JSON.stringify({sig: puzzle.words.join(','), grid: grid.join(''), moves: moves, solveMoves: solveMoves, won: won}));
+    return;
+  }
   setV('grid', grid.join(''));
   setV('moves', moves);
   setV('solveMoves', solveMoves.join(','));
@@ -135,7 +160,16 @@ function render() {
   if (tryControl) tryControl.hidden = won;
   if (tryHint) tryHint.hidden = !tryMode || won;
   document.getElementById('dayLabel').textContent = practice ? 'Practice' : '#' + dayNumber;
-  document.getElementById('practiceBanner').style.display = practice ? 'block' : 'none';
+  const pb = document.getElementById('practiceBanner');
+  pb.style.display = (practice || review) ? 'block' : 'none';
+  pb.innerHTML = '';
+  if (review) {
+    pb.appendChild(document.createTextNode('Past puzzle #' + dayNumber + ' (' + fmtDate(viewDate) + ') - score and streak are not affected '));
+    const a = document.createElement('a'); a.href = 'index.html'; a.textContent = 'Back to today';
+    pb.appendChild(a);
+  } else if (practice) {
+    pb.textContent = 'Practice puzzle - score and streak are not affected';
+  }
 }
 
 function onCellClick(e) {
@@ -196,7 +230,7 @@ function recomputeLocks(countNew) {
 function onWin() {
   won = true;
   save();
-  if (!practice) {
+  if (!practice && !review) {
     setV('winCount', (parseInt(getV('winCount','0'),10)||0) + 1);
     const today = localToday();
     const lastWin = getV('lastWin','');
@@ -273,6 +307,82 @@ function legacyCopy(text){try{var ta=document.createElement('textarea');ta.value
 function showShareBox(text){var old=document.getElementById('shareBox');if(old)old.remove();var box=document.createElement('div');box.id='shareBox';box.style.cssText='position:fixed;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,.6);z-index:100001;display:flex;align-items:center;justify-content:center;';var card=document.createElement('div');card.style.cssText='background:#fff;color:#000;padding:16px;border-radius:10px;width:88%;max-width:420px;font-size:16px;';var p=document.createElement('p');p.textContent='Copy your result and paste it anywhere:';p.style.margin='0 0 8px';var ta=document.createElement('textarea');ta.value=text;ta.readOnly=true;ta.style.cssText='width:100%;height:150px;box-sizing:border-box;font-size:16px;';ta.onfocus=function(){ta.select();};var wa=document.createElement('a');wa.textContent='Send via WhatsApp';wa.href='https://wa.me/?text='+encodeURIComponent(text);wa.target='_blank';wa.rel='noopener';wa.style.cssText='display:inline-block;margin:10px 12px 0 0;color:#2e7d32;font-weight:bold;';var cl=document.createElement('button');cl.textContent='Close';cl.style.cssText='margin-top:10px;padding:6px 14px;font-size:16px;';cl.onclick=function(){box.remove();};card.appendChild(p);card.appendChild(ta);card.appendChild(wa);card.appendChild(cl);box.appendChild(card);document.body.appendChild(box);ta.focus();ta.select();ta.scrollTop=0;}
 async function fallbackShare(text){if(navigator.clipboard&&navigator.clipboard.writeText){try{await navigator.clipboard.writeText(text);shareToast('Result copied to clipboard!');return;}catch(e){}}if(legacyCopy(text)){shareToast('Result copied to clipboard!');return;}showShareBox(text);}
 async function shareResult(){var text='🧩 3x3 Word Matrix '+(practice?'(practice)':'#'+dayNumber)+'\n'+'Solved in '+moves+' moves!\n\n'+barChart()+'\n'+SITE_URL;if(navigator.share){try{await navigator.share({title:'3x3 Word Matrix',text:text});return;}catch(e){if(e&&e.name==='AbortError')return;}}fallbackShare(text);}
+
+
+// ---------- other days (review) ----------
+(function(){
+  const css = document.createElement('style');
+  css.textContent = '.od-row{max-width:600px;margin:.6rem auto 0;text-align:center;position:relative}'
+   + '.od-btn{background:var(--bg-color,#fff);color:var(--text-color,#111);border:1px solid #bbb;border-radius:999px;padding:6px 14px;font-size:15px;cursor:pointer}'
+   + '.od-pop{position:absolute;left:50%;transform:translateX(-50%);top:110%;background:#fff;color:#111;border:1px solid #ccc;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.2);padding:10px;z-index:50;width:290px}'
+   + 'body.dark-mode .od-pop{background:#222;color:#eee;border-color:#555}'
+   + '.od-head{display:flex;justify-content:space-between;align-items:center;font-weight:bold;margin-bottom:6px}'
+   + '.od-head button{background:none;border:0;font-size:20px;cursor:pointer;color:inherit;padding:0 10px}'
+   + '.od-head button:disabled{opacity:.25;cursor:default}'
+   + '.od-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}'
+   + '.od-dow{font-size:12px;opacity:.6}'
+   + '.od-day{border:0;background:none;color:inherit;border-radius:6px;padding:7px 0;font-size:14px;cursor:pointer}'
+   + '.od-day:disabled{opacity:.25;cursor:default}'
+   + '.od-day.done{background:#6aaa64;color:#fff}'
+   + '.od-day.sel{outline:2px solid #1e6fb5}'
+   + '.od-day.today{font-weight:bold;text-decoration:underline}'
+   + '#practiceBanner a{margin-left:6px}';
+  document.head.appendChild(css);
+  let shown = null;
+  function pad(n){return String(n).padStart(2,'0');}
+  function ds(y,m,d){return y+'-'+pad(m+1)+'-'+pad(d);}
+  function isDone(d){
+    const today = localToday();
+    if (d === today) return getV('day','') === today && getV('won','0') === '1';
+    try { const st = JSON.parse(getV('rev_' + d, 'null')); return !!(st && st.won); } catch(e){ return false; }
+  }
+  function build() {
+    const row = document.createElement('div');
+    row.className = 'od-row';
+    row.innerHTML = '<button type="button" class="od-btn" id="odBtn">📅 Other days</button><div class="od-pop" id="odPop" style="display:none"></div>';
+    const content = document.querySelector('.content');
+    content.insertBefore(row, content.firstChild);
+    document.getElementById('odBtn').addEventListener('click', function(e){
+      e.stopPropagation();
+      const pop = document.getElementById('odPop');
+      if (pop.style.display === 'none') { const vd = (viewDate || localToday()).split('-').map(Number); shown = {y:vd[0], m:vd[1]-1}; paint(); pop.style.display = 'block'; }
+      else pop.style.display = 'none';
+    });
+    document.addEventListener('click', function(e){
+      const pop = document.getElementById('odPop');
+      if (pop && !pop.contains(e.target)) pop.style.display = 'none';
+    });
+  }
+  function paint() {
+    const pop = document.getElementById('odPop');
+    const today = localToday();
+    const [fy,fm] = FIRST_DATE.split('-').map(Number);
+    const [ty,tm] = today.split('-').map(Number);
+    const first = new Date(shown.y, shown.m, 1);
+    const title = first.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+    const prevOk = (shown.y > fy) || (shown.y === fy && shown.m > fm-1);
+    const nextOk = (shown.y < ty) || (shown.y === ty && shown.m < tm-1);
+    let h = '<div class="od-head"><button type="button" id="odPrev" aria-label="Previous month"' + (prevOk?'':' disabled') + '>&lsaquo;</button><span>' + title + '</span><button type="button" id="odNext" aria-label="Next month"' + (nextOk?'':' disabled') + '>&rsaquo;</button></div><div class="od-grid">';
+    ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(x => h += '<div class="od-dow">' + x + '</div>');
+    for (let i=0;i<first.getDay();i++) h += '<div></div>';
+    const dim = new Date(shown.y, shown.m+1, 0).getDate();
+    for (let d=1; d<=dim; d++) {
+      const s2 = ds(shown.y, shown.m, d);
+      const ok = s2 >= FIRST_DATE && s2 <= today;
+      let c = 'od-day' + (isDone(s2)?' done':'') + (s2===viewDate && !practice?' sel':'') + (s2===today?' today':'');
+      h += '<button type="button" class="' + c + '" data-d="' + s2 + '"' + (ok?'':' disabled') + '>' + d + '</button>';
+    }
+    h += '</div>';
+    pop.innerHTML = h;
+    document.getElementById('odPrev').onclick = function(e){ e.stopPropagation(); shown.m--; if (shown.m<0){shown.m=11;shown.y--;} paint(); };
+    document.getElementById('odNext').onclick = function(e){ e.stopPropagation(); shown.m++; if (shown.m>11){shown.m=0;shown.y++;} paint(); };
+    pop.querySelectorAll('.od-day').forEach(b => b.onclick = function(){
+      const d = b.dataset.d;
+      location.href = d === today ? 'index.html' : 'index.html?date=' + d;
+    });
+  }
+  window.addEventListener('load', build);
+})();
 
 // ---------- menus / theme ----------
 function toggleMenu(which) {
