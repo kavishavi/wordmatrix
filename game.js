@@ -41,8 +41,10 @@ function getV(k,d){ try { const v = localStorage.getItem(K(k)); return v===null 
 
 // ---------- analytics (GoatCounter; same quiz-started/quiz-completed events as the quizzes) ----------
 function trackEvent(name) {
-  if (practice || review) return;
-  const today = localToday();
+  if (practice) return;
+  // Past-day review: ordinary analytics, as separate events so daily quiz-started/completed counts stay clean.
+  const today = review ? viewDate : localToday();
+  if (review) name = name.replace('quiz-', 'past-day-');
   const path = name + '/' + today;
   const key = K('analytics_' + path);
   try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch (e) {}
@@ -86,6 +88,7 @@ function initGame() {
   const sig = puzzle.words.join(',');
   const sigOk = getV('puzzleSig','') === sig;
   if (review) {
+    trackEvent('quiz-started');
     let st = null;
     try { st = JSON.parse(getV('rev_' + viewDate, 'null')); } catch (e) {}
     if (st && st.sig === sig && st.grid && st.grid.length === 9) {
@@ -230,6 +233,7 @@ function recomputeLocks(countNew) {
 function onWin() {
   won = true;
   save();
+  if (review) trackEvent('quiz-completed');
   if (!practice && !review) {
     setV('winCount', (parseInt(getV('winCount','0'),10)||0) + 1);
     const today = localToday();
